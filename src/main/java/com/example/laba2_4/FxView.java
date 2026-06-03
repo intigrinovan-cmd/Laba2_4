@@ -22,7 +22,6 @@ public class FxView implements View {
     public FxView() {
         gridPane = new GridPane();
         gridPane.setPrefSize(CELL_SIZE * CELL_COUNT, CELL_SIZE * CELL_COUNT);
-
         initializeGrid();
     }
 
@@ -39,18 +38,14 @@ public class FxView implements View {
                 StackPane stackPane = new StackPane();
                 stackPane.getChildren().addAll(rect, text);
 
-                final int x = i;
-                final int y = j;
+                final int row = i;
+                final int col = j;
 
                 stackPane.setOnMouseClicked(event -> {
                     if (event.getButton() == MouseButton.PRIMARY) {
-                        if (onClick != null) {
-                            onClick.onClick(x, y);
-                        }
+                        if (onClick != null) onClick.onClick(row, col);
                     } else if (event.getButton() == MouseButton.SECONDARY) {
-                        if (onClick_right != null) {
-                            onClick_right.onClick_right(x, y);
-                        }
+                        if (onClick_right != null) onClick_right.onClick_right(row, col);
                     }
                 });
 
@@ -62,7 +57,7 @@ public class FxView implements View {
     }
 
     @Override
-    public Object getRoot() {
+    public javafx.scene.Parent getRoot() {
         return gridPane;
     }
 
@@ -90,10 +85,11 @@ public class FxView implements View {
                         text.setVisible(false);
                     } else {
                         rect.setFill(Color.WHITE);
-                        if (cell.CountMines == 0) {
+                        if (cell.countMines == 0) {
+                            text.setVisible(false);
                             continue;
                         }
-                        text.setText(String.valueOf(cell.CountMines));
+                        text.setText(String.valueOf(cell.countMines));
                         text.setVisible(true);
                     }
                 } else if (cell.isFlag) {
@@ -108,24 +104,18 @@ public class FxView implements View {
     }
 
     @Override
-    public void drawWin() {
-        showMessage("Победа!", "Поздравляем! Вы выиграли!");
-    }
+    public void drawWin() { showMessage("Победа!", "Поздравляем! Вы выиграли!"); }
 
     @Override
-    public void drawLoss() {
-        showMessage("Проигрыш", "К сожалению, вы проиграли(");
-    }
+    public void drawLoss() { showMessage("Проигрыш", "К сожалению, вы проиграли("); }
 
     private void showMessage(String title, String message) {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);
-
         ButtonType finishButton = new ButtonType("Выход");
         alert.getButtonTypes().setAll(finishButton);
-
-        alert.showAndWait().ifPresent(buttonType -> {System.exit(0);});
+        alert.showAndWait().ifPresent(buttonType -> System.exit(0));
     }
 }

@@ -1,13 +1,12 @@
 package com.example.laba2_4;
 
-public class Controller implements CanvasView.OnClick, View.OnClick_right {
+public class Controller implements View.OnClick, View.OnClick_right {
     private final View view;
     private final Model model;
     private boolean firstClick = true;
     private Model.Cell[][] field;
     private boolean Win = false;
     private boolean Loss = false;
-
 
     public Controller(View view, Model model) {
         this.view = view;
@@ -18,60 +17,50 @@ public class Controller implements CanvasView.OnClick, View.OnClick_right {
         view.setOnClick_right(this);
     }
 
-
     @Override
-    public void onClick(int x, int y) {
+    public void onClick(int row, int col) {
+        if (Win || Loss || field[row][col].isFlag || field[row][col].isOpen) return;
 
-        if (Win || Loss || field[x][y].isFlag || field[x][y].isOpen) return;
-
-        if(firstClick){
-            firstClick=false;
-            model.repositionMine(x,y);
+        if (firstClick) {
+            firstClick = false;
+            model.repositionMine(row, col);
+            this.field = model.getField();
         }
 
-        field[x][y].isOpen =true;
-
-        if(field[x][y].isMine){
+        if (field[row][col].isMine) {
             Loss = true;
             model.showMinesAll(field);
-        }else{
-            if (field[x][y].CountMines == 0) {
-                model.openNeighbors(x, y);
-            }
+        } else {
+            model.openNeighbors(row, col);
             checkWin();
         }
+
         view.drawField(field);
 
-        if (Win) {
-            view.drawWin();
-        }
-        if (Loss) {
-            view.drawLoss();
-        }
+        if (Win) view.drawWin();
+        if (Loss) view.drawLoss();
     }
-
 
     @Override
-    public void onClick_right(int x, int y) {
-        if (Win || Loss || field[x][y].isOpen) return;
+    public void onClick_right(int row, int col) {
+        if (Win || Loss || field[row][col].isOpen) return;
 
-        field[x][y].isFlag =!field[x][y].isFlag;
+        field[row][col].isFlag = !field[row][col].isFlag;
         view.drawField(field);
     }
-
 
     private void checkWin() {
         boolean won = true;
-        for(Model.Cell[] cells : field){
-            for(Model.Cell cell : cells){
-                if(!cell.isMine && !cell.isOpen){
+        for (int i = 0; i < HelloApplication.CELL_COUNT; i++) {
+            for (int j = 0; j < HelloApplication.CELL_COUNT; j++) {
+                if (!field[i][j].isMine && !field[i][j].isOpen) {
                     won = false;
                     break;
                 }
             }
             if (!won) break;
         }
-        if(won){
+        if (won) {
             Win = true;
         }
     }

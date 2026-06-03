@@ -7,127 +7,189 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
+import javafx.scene.layout.Pane;
 
 import static com.example.laba2_4.HelloApplication.CELL_COUNT;
 import static com.example.laba2_4.HelloApplication.CELL_SIZE;
 
 public class CanvasView implements View {
     private final GraphicsContext gc;
+    private final Canvas canvas;
+    private final Pane root;
     private OnClick onClick;
     private OnClick_right onClick_right;
-    private final Canvas canvas;
 
-    public CanvasView(Canvas canvas) {
+    public CanvasView() {
+        this.canvas = new Canvas(CELL_SIZE * CELL_COUNT, CELL_SIZE * CELL_COUNT);
         this.gc = canvas.getGraphicsContext2D();
-        this.canvas = canvas;
+        this.root = new Pane(canvas);
 
         canvas.addEventHandler(MouseEvent.MOUSE_CLICKED, event -> {
             if (onClick == null || onClick_right == null) {
                 return;
             }
-            int x = (int) (event.getX() / CELL_SIZE);
-            int y = (int) (event.getY() / CELL_SIZE);
+            int col = (int) (event.getX() / CELL_SIZE);
+            int row = (int) (event.getY() / CELL_SIZE);
 
-            if (event.getButton() == MouseButton.PRIMARY) {
-                if (x >= 0 && x < CELL_COUNT && y >= 0 && y < CELL_COUNT) {
-                    onClick.onClick(y, x);
-                }
-            }
-            else if (event.getButton() == MouseButton.SECONDARY) {
-                if (x >= 0 && x < CELL_COUNT && y >= 0 && y < CELL_COUNT) {
-                    onClick_right.onClick_right(y, x);
+            if (row >= 0 && row < CELL_COUNT && col >= 0 && col < CELL_COUNT) {
+                if (event.getButton() == MouseButton.PRIMARY) {
+                    onClick.onClick(row, col);
+                } else if (event.getButton() == MouseButton.SECONDARY) {
+                    onClick_right.onClick_right(row, col);
                 }
             }
         });
     }
-
-
-    @Override
-    public Object getRoot() {
-        return canvas;
-    }
-
 
     @Override
     public void setOnClick(OnClick onClick) {
         this.onClick = onClick;
     }
 
-
     @Override
     public void setOnClick_right(OnClick_right onClick_right) {
         this.onClick_right = onClick_right;
     }
 
-
     @Override
     public void drawField(Model.Cell[][] field) {
-        for(int i = 0; i < CELL_COUNT; i++){
-            for(int j = 0; j < CELL_COUNT; j++){
-                Model.Cell cell = field[i][j];
+        gc.setFill(Color.web("#BDBDBD"));
+        gc.fillRect(0, 0, CELL_SIZE * CELL_COUNT, CELL_SIZE * CELL_COUNT);
 
-                if(cell.isOpen){
-                    if(cell.isMine){
-                        drawMine(i, j);
-                    }else{
-                        gc.setFill(Color.WHITE);
-                        gc.fillRect(j*CELL_SIZE,i*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-                        gc.strokeRect(j*CELL_SIZE,i*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-                        if (cell.CountMines == 0) {
-                            continue;
+        for (int i = 0; i < CELL_COUNT; i++) {
+            for (int j = 0; j < CELL_COUNT; j++) {
+                Model.Cell cell = field[i][j];
+                double x = j * CELL_SIZE;
+                double y = i * CELL_SIZE;
+
+                if (cell.isOpen) {
+                    if (cell.isMine) {
+                        drawMine(x, y);
+                    } else {
+                        gc.setFill(Color.web("#E0E0E0"));
+                        gc.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+                        gc.setStroke(Color.web("#9E9E9E"));
+                        gc.setLineWidth(1);
+                        gc.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+
+                        if (cell.countMines > 0) {
+                            drawNumber(x, y, cell.countMines);
                         }
-                        String countStr = Integer.toString(cell.CountMines);
-                        gc.strokeText(countStr,j*CELL_SIZE + CELL_SIZE / 2 - 5, i*CELL_SIZE + CELL_SIZE / 2 + 5);
                     }
-                }else if(cell.isFlag){
-                    drawFlag(i, j);
-                }else{
-                    gc.setFill(Color.GRAY);
-                    gc.setStroke(Color.BLACK);
-                    gc.fillRect(j*CELL_SIZE,i*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-                    gc.strokeRect(j*CELL_SIZE,i*CELL_SIZE,CELL_SIZE,CELL_SIZE);
+                } else if (cell.isFlag) {
+                    drawFlag(x, y);
+                } else {
+                    draw3DButton(x, y);
                 }
             }
         }
     }
 
+    private void draw3DButton(double x, double y) {
+        gc.setFill(Color.web("#BDBDBD"));
+        gc.fillRect(x, y, CELL_SIZE, CELL_SIZE);
 
-    private void drawMine(int i, int j){
-        gc.setFill(Color.WHITE);
-        gc.fillRect(j*CELL_SIZE,i*CELL_SIZE,CELL_SIZE,CELL_SIZE);
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(2);
+        gc.strokeLine(x, y, x + CELL_SIZE, y);
+        gc.strokeLine(x, y, x, y + CELL_SIZE);
+
+        gc.setStroke(Color.web("#7B7B7B"));
+        gc.strokeLine(x + CELL_SIZE - 1, y, x + CELL_SIZE - 1, y + CELL_SIZE);
+        gc.strokeLine(x, y + CELL_SIZE - 1, x + CELL_SIZE, y + CELL_SIZE - 1);
+    }
+
+    private void drawNumber(double x, double y, int count) {
+        Color numColor = switch (count) {
+            case 1 -> Color.BLUE;
+            case 2 -> Color.web("#388E3C");
+            case 3 -> Color.RED;
+            case 4 -> Color.web("#1A237E");
+            case 5 -> Color.web("#7B1FA2");
+            default -> Color.web("#006064");
+        };
+
+        gc.save();
+        gc.setFill(numColor);
+        gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, CELL_SIZE * 0.65));
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText(Integer.toString(count), x + CELL_SIZE * 0.5, y + CELL_SIZE * 0.72);
+        gc.restore();
+    }
+
+    private void drawMine(double x, double y) {
+        gc.setFill(Color.web("#EF5350"));
+        gc.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+        gc.setStroke(Color.web("#9E9E9E"));
+        gc.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+
         gc.setFill(Color.BLACK);
+        double r = CELL_SIZE * 0.5;
+        double cx = x + r;
+        double cy = y + r;
+
+        gc.fillOval(cx - r * 0.5, cy - r * 0.5, r, r);
+
         gc.setStroke(Color.BLACK);
-        gc.strokeRect(j*CELL_SIZE,i*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-        gc.fillOval(j*CELL_SIZE+5,i*CELL_SIZE+5,CELL_SIZE-10,CELL_SIZE-10);
+        gc.setLineWidth(2);
+        gc.strokeLine(cx - r * 0.7, cy, cx + r * 0.7, cy);
+        gc.strokeLine(cx, cy - r * 0.7, cx, cy + r * 0.7);
+
+        gc.setFill(Color.WHITE);
+        gc.fillOval(cx - r * 0.2, cy - r * 0.2, r * 0.2, r * 0.2);
     }
 
+    private void drawFlag(double x, double y) {
+        draw3DButton(x, y);
 
-    private void drawFlag(int i, int j){
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(2);
+        gc.strokeLine(x + CELL_SIZE * 0.35, y + CELL_SIZE * 0.25, x + CELL_SIZE * 0.35, y + CELL_SIZE * 0.75);
+        gc.strokeLine(x + CELL_SIZE * 0.25, y + CELL_SIZE * 0.75, x + CELL_SIZE * 0.6, y + CELL_SIZE * 0.75);
+
         gc.setFill(Color.RED);
-        gc.fillRect(j*CELL_SIZE,i*CELL_SIZE,CELL_SIZE,CELL_SIZE);
-        gc.strokeLine(j*CELL_SIZE+5,i*CELL_SIZE+5,j*CELL_SIZE+CELL_SIZE-5,i*CELL_SIZE+CELL_SIZE-5);
-        gc.strokeLine(j*CELL_SIZE+CELL_SIZE-5,i*CELL_SIZE+5,j*CELL_SIZE+5,i*CELL_SIZE+CELL_SIZE-5);
+        double[] xPoints = { x + CELL_SIZE * 0.35, x + CELL_SIZE * 0.7, x + CELL_SIZE * 0.35 };
+        double[] yPoints = { y + CELL_SIZE * 0.25, y + CELL_SIZE * 0.4, y + CELL_SIZE * 0.5 };
+        gc.fillPolygon(xPoints, yPoints, 3);
     }
-
 
     @Override
-    public void drawWin(){
-        gc.save();
-        gc.setFill(Color.RED);
-        gc.setFont(Font.font("Arial", FontWeight.BOLD, CELL_SIZE));
-        gc.fillText("Победа!!!",CELL_SIZE * CELL_COUNT / 2 - CELL_SIZE*3, CELL_SIZE * CELL_COUNT / 2);
-        gc.restore();
+    public javafx.scene.Parent getRoot() {
+        return root;
     }
-
 
     @Override
-    public void drawLoss(){
-        gc.save();
-        gc.setFill(Color.RED);
-        gc.setFont(Font.font("Arial", FontWeight.BOLD, CELL_SIZE));
-        gc.fillText("Проигрыш(",CELL_SIZE * CELL_COUNT / 2 - CELL_SIZE*3, CELL_SIZE * CELL_COUNT / 2);
-        gc.restore();
+    public void drawWin() {
+        drawEndGameOverlay("Вы победили!", Color.web("#2E7D32"));
     }
 
+    @Override
+    public void drawLoss() {
+        drawEndGameOverlay("Взрыв! ИГРА ОКОНЧЕНА", Color.web("#C62828"));
+    }
 
+    private void drawEndGameOverlay(String text, Color bannerColor) {
+        gc.save();
+        double totalWidth = CELL_SIZE * CELL_COUNT;
+        double totalHeight = CELL_SIZE * CELL_COUNT;
+
+        gc.setFill(Color.rgb(0, 0, 0, 0.4));
+        gc.fillRect(0, 0, totalWidth, totalHeight);
+
+        double bannerH = CELL_SIZE * 1.8;
+        double bannerY = totalHeight / 2.0 - bannerH / 2.0;
+        gc.setFill(bannerColor);
+        gc.fillRect(0, bannerY, totalWidth, bannerH);
+
+        gc.setStroke(Color.WHITE);
+        gc.setLineWidth(1.5);
+        gc.strokeRect(0, bannerY, totalWidth, bannerH);
+
+        gc.setFill(Color.WHITE);
+        gc.setFont(Font.font("Segoe UI", FontWeight.BOLD, CELL_SIZE * 0.65));
+        gc.setTextAlign(TextAlignment.CENTER);
+        gc.fillText(text, totalWidth / 2.0, bannerY + bannerH * 0.62);
+        gc.restore();
+    }
 }
